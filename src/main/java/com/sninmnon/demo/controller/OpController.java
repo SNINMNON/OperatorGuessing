@@ -58,35 +58,68 @@ public class OpController {
 
     private Map<String, String> compare(Operator g, Operator m) {
         Map<String, String> cmp = new HashMap<>();
-        if (Objects.equals(g.getFaction(), m.getFaction())) {
-            cmp.put("faction", "equal");
-        } else {
-            cmp.put("faction", "different");
-        }
+        String clueField = "";
+        String clue = "";
 
+        clueField = "faction";
+        Set<String> mFactions = new HashSet<>(Arrays.asList(m.getFaction().split(", ")));
+        Set<String> gFactions = new HashSet<>(Arrays.asList(g.getFaction().split(", ")));
+        gFactions.retainAll(mFactions);
+        if (Objects.equals(gFactions, mFactions)) {
+            clue = "equal";
+        } else if (gFactions.isEmpty()){
+            clue = "different";
+        } else {
+            clue = "close";
+        }
+        cmp.put(clueField, clue);
+
+        clueField = "gender";
         if (Objects.equals(g.getGender(), m.getGender())) {
-            cmp.put("gender", "equal");
+            clue = "equal";
         } else {
-            cmp.put("gender", "different");
+            clue = "different";
         }
+        cmp.put(clueField, clue);
 
-        //TODO: when rarity close(+-1)
-        if (g.getRarity() > m.getRarity()) {
-            cmp.put("rarity", "too high");
-        } else if (g.getRarity().equals(m.getRarity())) {
-            cmp.put("rarity", "equal");
+        clueField = "rarity";
+        if (g.getRarity().equals(m.getRarity())) {
+            clue = "equal";
         } else {
-            cmp.put("rarity", "too low");
+            if (g.getRarity().equals(m.getRarity() + 1) ||
+                    g.getRarity().equals(m.getRarity() - 1)) {
+                clue = "close ";
+            } else {
+                clue = "too ";
+            }
+            if (g.getRarity() > m.getRarity()) {
+                clue += "high";
+            } else {
+                clue += "low";
+            }
         }
+        cmp.put(clueField, clue);
 
-        //TODO: when release difference within same year
-        if (g.getRelease().after(m.getRelease())) {
-            cmp.put("release", "too late");
-        } else if (g.getRelease().equals(m.getRelease())) {
-            cmp.put("release", "equal");
+        clueField = "release";
+        Calendar gCalendar = Calendar.getInstance();
+        Calendar mCalendar = Calendar.getInstance();
+        gCalendar.setTime(g.getRelease());
+        mCalendar.setTime(m.getRelease());
+        if (g.getRelease().equals(m.getRelease())) {
+            clue = "equal";
         } else {
-            cmp.put("release", "too soon");
+            if (gCalendar.get(Calendar.YEAR) == mCalendar.get(Calendar.YEAR)) {
+                clue = "close ";
+            } else {
+                clue = "too ";
+            }
+            if (g.getRelease().after(m.getRelease())) {
+                clue += "late";
+            } else {
+                clue += "soon";
+            }
         }
+        cmp.put(clueField, clue);
 
         return cmp;
     }
