@@ -61,6 +61,14 @@ public class OpController {
         String clueField = "";
         String clue = "";
 
+        clueField = "role";
+        if (Objects.equals(g.getRole(), m.getRole())) {
+            clue = "equal";
+        } else {
+            clue = "different";
+        }
+        cmp.put(clueField, clue);
+
         clueField = "faction";
         Set<String> mFactions = new HashSet<>(Arrays.asList(m.getFaction().split(", ")));
         Set<String> gFactions = new HashSet<>(Arrays.asList(g.getFaction().split(", ")));
@@ -71,6 +79,14 @@ public class OpController {
             clue = "different";
         } else {
             clue = "close";
+        }
+        cmp.put(clueField, clue);
+
+        clueField = "position";
+        if (Objects.equals(g.getPosition(), m.getPosition())) {
+            clue = "equal";
+        } else {
+            clue = "different";
         }
         cmp.put(clueField, clue);
 
