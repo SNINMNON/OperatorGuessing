@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpSession;
 import java.util.*;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true") // for local debugging
 @RequestMapping("/api")
 public class OpController {
     private final OpService opService;
