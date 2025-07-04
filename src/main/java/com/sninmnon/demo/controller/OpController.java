@@ -18,8 +18,16 @@ public class OpController {
     }
 
     @GetMapping("/start")
-    public Map<String, Object> startGame(HttpSession session) {
-        Operator mystery = opService.getRandom();
+    public Map<String, Object> startGame(@RequestParam Integer rarity, HttpSession session) {
+        Operator mystery;
+        if (rarity.equals(0)) {
+            mystery = opService.getRandom();
+        } else if (rarity <= 6 && rarity >= 1){
+            mystery = opService.getRandomWithRarity(rarity);
+        } else {
+            return Map.of("message", "稀有度超出限制");
+        }
+
         session.setAttribute("mysteryId", mystery.getId());
         return Map.of(
                 "message", "游戏开始！",
@@ -50,95 +58,11 @@ public class OpController {
             res.put("message", "猜对了");
         } else {
             res.put("correct", false);
-            res.put("comparison", compare(guess, mystery));
+            res.put("comparison", opService.compare(guess, mystery));
         }
 
         res.put("guess", guess);
         return res;
-    }
-
-    private Map<String, String> compare(Operator g, Operator m) {
-        Map<String, String> cmp = new HashMap<>();
-        String clueField = "";
-        String clue = "";
-
-        clueField = "role";
-        if (Objects.equals(g.getRole(), m.getRole())) {
-            clue = "equal";
-        } else {
-            clue = "different";
-        }
-        cmp.put(clueField, clue);
-
-        clueField = "faction";
-        Set<String> mFactions = new HashSet<>(Arrays.asList(m.getFaction().split(", ")));
-        Set<String> gFactions = new HashSet<>(Arrays.asList(g.getFaction().split(", ")));
-        gFactions.retainAll(mFactions);
-        if (Objects.equals(gFactions, mFactions)) {
-            clue = "equal";
-        } else if (gFactions.isEmpty()){
-            clue = "different";
-        } else {
-            clue = "close";
-        }
-        cmp.put(clueField, clue);
-
-        clueField = "position";
-        if (Objects.equals(g.getPosition(), m.getPosition())) {
-            clue = "equal";
-        } else {
-            clue = "different";
-        }
-        cmp.put(clueField, clue);
-
-        clueField = "gender";
-        if (Objects.equals(g.getGender(), m.getGender())) {
-            clue = "equal";
-        } else {
-            clue = "different";
-        }
-        cmp.put(clueField, clue);
-
-        clueField = "rarity";
-        if (g.getRarity().equals(m.getRarity())) {
-            clue = "equal";
-        } else {
-            if (g.getRarity().equals(m.getRarity() + 1) ||
-                    g.getRarity().equals(m.getRarity() - 1)) {
-                clue = "close ";
-            } else {
-                clue = "too ";
-            }
-            if (g.getRarity() > m.getRarity()) {
-                clue += "high";
-            } else {
-                clue += "low";
-            }
-        }
-        cmp.put(clueField, clue);
-
-        clueField = "release";
-        Calendar gCalendar = Calendar.getInstance();
-        Calendar mCalendar = Calendar.getInstance();
-        gCalendar.setTime(g.getRelease());
-        mCalendar.setTime(m.getRelease());
-        if (g.getRelease().equals(m.getRelease())) {
-            clue = "equal";
-        } else {
-            if (gCalendar.get(Calendar.YEAR) == mCalendar.get(Calendar.YEAR)) {
-                clue = "close ";
-            } else {
-                clue = "too ";
-            }
-            if (g.getRelease().after(m.getRelease())) {
-                clue += "late";
-            } else {
-                clue += "soon";
-            }
-        }
-        cmp.put(clueField, clue);
-
-        return cmp;
     }
 
     @GetMapping("/suggest")

@@ -88,7 +88,7 @@ suggestions.addEventListener("click", async (e) => {
 }
 
 document.getElementById("startBtn").addEventListener("click", async () => {
-const res = await fetch(`${API_BASE}/start`, {
+const res = await fetch(`${API_BASE}/start?rarity=0`, {
   method: "GET",
   credentials: "include"  // ✅ 保留 Cookie（JSESSIONID）
 });

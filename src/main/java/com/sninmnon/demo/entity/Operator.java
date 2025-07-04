@@ -8,6 +8,7 @@ public class Operator {
     private Long id;
     private String name;
     private String role;
+    private String race;
     private Integer rarity;
     private String gender;
     private String faction;
