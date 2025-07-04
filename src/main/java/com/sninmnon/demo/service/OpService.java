@@ -39,6 +39,14 @@ public class OpService {
         String clueField = "";
         String clue = "";
 
+        clueField = "name";
+        if (Objects.equals(g.getName(), m.getName())) {
+            clue = "equal";
+        } else {
+            clue = "different";
+        }
+        cmp.put(clueField, clue);
+
         clueField = "role";
         if (Objects.equals(g.getRole(), m.getRole())) {
             clue = "equal";

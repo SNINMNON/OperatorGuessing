@@ -31,7 +31,7 @@ public class OpController {
         session.setAttribute("mysteryId", mystery.getId());
         return Map.of(
                 "message", "游戏开始！",
-                "note", "谜底人物已选定，请开始猜名字"
+                "note", "谜底干员已选定，请开始猜名字"
         );
     }
 
@@ -55,12 +55,10 @@ public class OpController {
 
         if (guess.getName().equalsIgnoreCase(mystery.getName())) {
             res.put("correct", true);
-            res.put("message", "猜对了");
         } else {
             res.put("correct", false);
-            res.put("comparison", opService.compare(guess, mystery));
         }
-
+        res.put("comparison", opService.compare(guess, mystery));
         res.put("guess", guess);
         return res;
     }
