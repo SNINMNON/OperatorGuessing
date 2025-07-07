@@ -20,6 +20,9 @@ public interface OpMapper {
     @Select("SELECT * FROM ops WHERE rarity = #{rarity} ORDER BY RANDOM() LIMIT 1")
     Operator getRandomWithRarity(Integer rarity);
 
-    @Select("SELECT name FROM ops WHERE LOWER(name) LIKE LOWER(#{query}) || '%' LIMIT 10")
-    List<String> suggestNames(String query);
+    @Select("SELECT name FROM ops WHERE LOWER(name) LIKE (LOWER(#{query}) || '%') LIMIT 10")
+    List<String> suggestNamesStart(String query);
+
+    @Select("SELECT name FROM ops WHERE LOWER(name) LIKE ('%' || LOWER(#{query}) || '%') LIMIT 10")
+    List<String> suggestNamesMid(String query);
 }

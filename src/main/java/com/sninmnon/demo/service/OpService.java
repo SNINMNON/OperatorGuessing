@@ -31,7 +31,15 @@ public class OpService {
     }
 
     public List<String> suggestNames(String query) {
-        return opMapper.suggestNames(query);
+        List<String> nameList = opMapper.suggestNamesStart(query);
+        if (nameList.size() == 10) {
+            return nameList;
+        }
+        nameList.addAll(opMapper.suggestNamesMid(query));
+        if (nameList.size() > 10) {
+            return nameList.subList(0, 11);
+        }
+        return nameList;
     }
 
     public Map<String, String> compare(Operator g, Operator m) {
