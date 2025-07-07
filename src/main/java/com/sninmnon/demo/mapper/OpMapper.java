@@ -23,6 +23,6 @@ public interface OpMapper {
     @Select("SELECT name FROM ops WHERE LOWER(name) LIKE (LOWER(#{query}) || '%') LIMIT 10")
     List<String> suggestNamesStart(String query);
 
-    @Select("SELECT name FROM ops WHERE LOWER(name) LIKE ('%' || LOWER(#{query}) || '%') LIMIT 10")
+    @Select("SELECT name FROM ops WHERE LOWER(name) LIKE ('%_' || LOWER(#{query}) || '%') LIMIT 10")
     List<String> suggestNamesMid(String query);
 }
