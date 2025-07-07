@@ -1,5 +1,6 @@
 package com.sninmnon.demo.controller;
 
+import com.sninmnon.demo.entity.GuessFeedback;
 import com.sninmnon.demo.service.OpService;
 import com.sninmnon.demo.entity.Operator;
 import org.springframework.web.bind.annotation.*;
@@ -58,7 +59,8 @@ public class OpController {
         } else {
             res.put("correct", false);
         }
-        res.put("comparison", opService.compare(guess, mystery));
+        GuessFeedback feedback = new GuessFeedback(guess, mystery);
+        res.put("comparison", feedback);
         res.put("guess", guess);
         return res;
     }
