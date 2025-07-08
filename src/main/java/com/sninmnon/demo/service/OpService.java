@@ -10,8 +10,8 @@ import java.util.*;
 public class OpService {
     private final OpMapper opMapper;
 
-    public OpService(OpMapper opsMapper) {
-        this.opMapper = opsMapper;
+    public OpService(OpMapper opMapper) {
+        this.opMapper = opMapper;
     }
 
     public Operator findByName(String name) {
