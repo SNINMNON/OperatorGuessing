@@ -9,6 +9,7 @@ import java.util.Map;
 @Data
 public class WebSocketMessage {
     private String type;      // join, ready, guess, etc.
+    private String userId;
     private final Map<String, Object> data = new HashMap<>();
 
     public WebSocketMessage() {}

@@ -41,8 +41,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(@NonNull WebSocketSession session, TextMessage message) throws IOException {
         WebSocketMessage msg = objectMapper.readValue(message.getPayload(), WebSocketMessage.class);
-        String userId = msg.getData("userId"); // always non-null
-        String roomId = msg.getData("roomId"); // can be null when create/join
+        String userId = msg.getUserId();
+        String roomId;
 
         log.info("Message received: type={}, user={}", msg.getType(), userId);
 
@@ -63,6 +63,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             // join existing room
             case "join":
+                roomId = msg.getData("roomId");
                 if (userRoomMap.get(userId) != null) {
                     sendErrorMsg(session, "user already in room " + userRoomMap.get(userId));
                     break;
@@ -82,6 +83,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             // mark ready for user in game room
             case "ready":
+                roomId = userRoomMap.get(userId);
                 if (roomService.roomNotExist(roomId)) {
                     sendErrorMsg(session, "room not exist");
                     break;
@@ -101,6 +103,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 break;
 
             case "unready":
+                roomId = userRoomMap.get(userId);
                 if (roomService.roomNotExist(roomId)) {
                     sendErrorMsg(session, "room not exist");
                     break;
@@ -116,6 +119,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             // guess operator
             case "guess":
+                roomId = userRoomMap.get(userId);
                 if (roomService.roomNotExist(roomId)) {
                     sendErrorMsg(session, "room not exist");
                     break;
@@ -138,13 +142,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
                 // when guess correct
                 if (Boolean.TRUE.equals(guessResponse.get("correct"))) {
-                    broadcast(roomId, null, "over", "game over");
-                    broadcast(roomId, null, "winner", userId);
+                    broadcast(roomId, userId, "win", "game over");
                     // send to self opponent history guesses
-                    sendPayload(roomId, userId, "history",
+                    sendPayload(roomId, userId, "opponent history",
                             roomService.getPastGuesses(roomId, opponentId));
                     // send to opponent self history guesses
-                    sendPayload(roomId, opponentId, "history",
+                    sendPayload(roomId, opponentId, "opponent history",
                             roomService.getPastGuesses(roomId, userId));
                     roomService.roomGameOver(roomId);
                 }
@@ -165,7 +168,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             if (s.isOpen()) {
                 WebSocketMessage msg = new WebSocketMessage("broadcast");
-                msg.putData("userId", sourceUserId);
+                msg.setUserId(sourceUserId);
                 msg.putData(msgName, message);
                 s.sendMessage(new TextMessage(objectMapper.writeValueAsString(msg)));
             }
@@ -180,6 +183,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
         if (session.isOpen()) {
             WebSocketMessage msg = new WebSocketMessage(type);
+            msg.setUserId(userId);
             msg.putData("payload", payload);
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(msg)));
         }

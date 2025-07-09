@@ -18,8 +18,8 @@ public class RoomService {
 
     public String createRoom(String creatorId) {
         String roomId = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        //Operator answer = opMapper.getRandomOp();
-        Operator answer = opMapper.findByName("阿");
+        Operator answer = opMapper.getRandomOp();
+        //Operator answer = opMapper.findByName("阿");
         GameRoom room = new GameRoom(roomId, answer);
         room.addPlayer(creatorId);
         roomMap.put(roomId, room);
