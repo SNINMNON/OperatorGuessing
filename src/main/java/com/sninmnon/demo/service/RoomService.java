@@ -30,7 +30,10 @@ public class RoomService {
     public void joinRoom(String roomId, String userId) {
         GameRoom room = roomMap.get(roomId);
         if (room != null) {
-            room.addPlayer(userId);
+            synchronized (room) {
+                room.addPlayer(userId);
+                log.info("GameRoom: {}, added player: {}", room, userId);
+            }
         }
     }
 
@@ -38,6 +41,7 @@ public class RoomService {
         GameRoom room = roomMap.get(roomId);
         if (room != null) {
             room.setReady(userId, true);
+            log.info("user {} set ready", userId);
         }
     }
 
@@ -45,6 +49,7 @@ public class RoomService {
         GameRoom room = roomMap.get(roomId);
         if (room != null) {
             room.setReady(userId, false);
+            log.info("user {} set unready", userId);
         }
     }
 
@@ -59,6 +64,11 @@ public class RoomService {
         Operator guess = opMapper.findByName(guessName);
         Operator answer = room.getAnswer();
 
+        if (guess == null) {
+            log.warn("Guess name {} not found", guessName);
+            return null;
+        }
+
         GuessFeedback feedback = new GuessFeedback(guess, answer);
         room.recordGuess(userId, guess, feedback);
 
@@ -66,9 +76,9 @@ public class RoomService {
         payload.put("comparison", feedback);
         payload.put("guess", guess);
         if (feedback.getName().equals("equal")) {
-            payload.put("correct", "true");
+            payload.put("correct", true);
         } else {
-            payload.put("correct", "false");
+            payload.put("correct", false);
         }
         return payload;
     }
@@ -85,18 +95,14 @@ public class RoomService {
 
     public void checkRoomVacant(String roomId) {
         GameRoom room = roomMap.get(roomId);
-        if (room != null && room.getPlayerNumber() == 0) {
+        if (room.getPlayerNumber() == 0) {
             roomMap.remove(roomId);
             log.info("Deleted room {}", roomId);
         }
     }
 
     public boolean roomNotExist(String roomId) {
-        if (roomId == null) {
-            return false;
-        }
-        GameRoom room = roomMap.get(roomId);
-        return room == null;
+        return roomId == null || roomMap.get(roomId) == null;
     }
 
     public boolean roomStarted(String roomId) {
@@ -111,5 +117,19 @@ public class RoomService {
         GameRoom room = roomMap.get(roomId);
         room.setStarted(false);
         room.resetMaps();
+        log.info("room {} game over", roomId);
+    }
+
+    public void removePlayer(String roomId, String userId){
+        GameRoom room = roomMap.get(roomId);
+        if (room == null || userId == null) {
+            return;
+        }
+        if (room.getPlayerIds().contains(userId)) {
+            room.getPlayerIds().remove(userId);
+            room.getFeedbackMap().remove(userId);
+            room.getGuessNamesMap().remove(userId);
+            room.getReadyMap().remove(userId);
+        }
     }
 }

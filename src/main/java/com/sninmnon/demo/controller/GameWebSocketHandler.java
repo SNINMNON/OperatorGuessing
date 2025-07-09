@@ -93,8 +93,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 roomService.markReady(roomId, userId);
                 broadcast(roomId, "ready", userId, "user ready");
 
-                if (roomService.getGameRoom(roomId).allReady()) {
-                    roomService.getGameRoom(roomId).setStarted(true);
+                GameRoom room = roomService.getGameRoom(roomId);
+                if (room.allReady()) {
+                    room.setStarted(true);
                     broadcast(roomId, "start", null, "game start");
                 }
                 break;
@@ -136,7 +137,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 sendPayload(roomId, opponentId, "guess", payload);
 
                 // when guess correct
-                if (payload.get("correct").equals("true")) {
+                if (Boolean.TRUE.equals(payload.get("correct"))) {
                     broadcast(roomId, "over", null, "game over");
                     // send to self opponent guesses
                     sendPayload(roomId, userId, "opponent guesses",
@@ -189,48 +190,53 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, @NonNull CloseStatus status) throws IOException {
-        log.info("WebSocket closed: " + session.getId());
+        log.info("WebSocket closed: {}", session.getId());
 
         String disconnectedUserId = null;
         String affectedRoomId = null;
 
-        // iterate over every room to find the disconnected user
+        // 查找并移除用户会话
+        outer:
         for (Map.Entry<String, Map<String, WebSocketSession>> roomEntry : roomSessions.entrySet()) {
             String roomId = roomEntry.getKey();
             Map<String, WebSocketSession> userMap = roomEntry.getValue();
 
-            Iterator<Map.Entry<String, WebSocketSession>> iterator = userMap.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, WebSocketSession> userEntry = iterator.next();
-                if (userEntry.getValue().getId().equals(session.getId())) {
-                    disconnectedUserId = userEntry.getKey();
-                    affectedRoomId = roomId;
-
-                    iterator.remove(); // remove session from room
-                    break;
+            synchronized (userMap) {
+                for (Map.Entry<String, WebSocketSession> userEntry : userMap.entrySet()) {
+                    if (userEntry.getValue().getId().equals(session.getId())) {
+                        disconnectedUserId = userEntry.getKey();
+                        affectedRoomId = roomId;
+                        userMap.remove(disconnectedUserId);
+                        break outer;
+                    }
                 }
-            }
-            if (disconnectedUserId != null) {
-                break;
             }
         }
 
         if (disconnectedUserId != null && affectedRoomId != null) {
             userRoomMap.remove(disconnectedUserId);
+            log.info("User {} removed from room {}", disconnectedUserId, affectedRoomId);
+
+            // 通知房间其他人
+            try {
+                broadcast(affectedRoomId, "message", null, "user " + disconnectedUserId + " disconnected");
+            } catch (Exception e) {
+                log.error("Failed to broadcast disconnection", e);
+            }
+
+            // end game and remove user within room service
+            roomService.removePlayer(affectedRoomId, disconnectedUserId);
             roomService.roomGameOver(affectedRoomId);
 
-            // clear whole room entry if room empty
-            if (roomSessions.get(affectedRoomId).isEmpty()) {
+            // 如果房间空了，清理房间
+            Map<String, WebSocketSession> remainingSessions = roomSessions.get(affectedRoomId);
+            if (remainingSessions != null && remainingSessions.isEmpty()) {
                 roomSessions.remove(affectedRoomId);
             }
-            roomService.checkRoomVacant(affectedRoomId);
 
-            try {
-                broadcast(affectedRoomId, "message", null,
-                        "user " + disconnectedUserId + " disconnected");
-            } catch (IOException e) {
-                log.error("Error broadcasting disconnect message", e);
-            }
+            roomService.checkRoomVacant(affectedRoomId);  // 这个方法内部会移除空房
+        } else {
+            log.warn("Disconnected session {} not found in roomSessions", session.getId());
         }
     }
 }

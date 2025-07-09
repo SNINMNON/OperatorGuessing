@@ -1,21 +1,20 @@
 package com.sninmnon.demo.entity;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
+@Data
 public class GameRoom {
-    @Getter
     private final String roomId;
-    private final List<String> playerIds = new ArrayList<>();
-    private final Map<String, Boolean> readyMap = new HashMap<>(); // playerID -> ready
-    private final Map<String, List<GuessFeedback>> feedbackMap = new HashMap<>(); // playerID -> past feedbacks
-    private final Map<String, List<String>> guessNamesMap = new HashMap<>(); // playerID -> past guesses
-    @Getter
+
+    private final List<String> playerIds = Collections.synchronizedList(new ArrayList<>());
+    private final Map<String, Boolean> readyMap = new ConcurrentHashMap<>(); // playerID -> ready
+    private final Map<String, List<GuessFeedback>> feedbackMap = new ConcurrentHashMap<>(); // playerID -> past feedbacks
+    private final Map<String, List<String>> guessNamesMap = new ConcurrentHashMap<>(); // playerID -> past guesses
+
     private final Operator answer;
-    @Getter
-    @Setter
     private boolean started = false;
 
     public GameRoom(String roomId, Operator answer) {
@@ -23,25 +22,45 @@ public class GameRoom {
         this.answer = answer;
     }
 
+    @Override
+    public String toString() {
+        return "GameRoom{" +
+                "roomId='" + roomId + '\'' +
+                ", playerIds=" + playerIds +
+                ", started=" + started +
+                '}';
+    }
+
+    public void printInfo() {
+        StringBuilder msg = new StringBuilder();
+        msg.append("roomId=").append(roomId);
+        for (String userId: this.playerIds) {
+            msg.append("\tuserId=").append(userId);
+            msg.append("\tfeedbacks=").append(this.feedbackMap.get(userId));
+            msg.append("\tguessNames=").append(this.guessNamesMap.get(userId));
+        }
+        msg.append("\treadyMap=").append(this.readyMap);
+        System.out.println(msg);
+    }
+
     public void addPlayer(String userId) {
         if (playerIds.size() < 2 && !playerIds.contains(userId)) {
             playerIds.add(userId);
             readyMap.put(userId, false);
-            feedbackMap.put(userId, new ArrayList<>());
-            guessNamesMap.put(userId, new ArrayList<>());
+            feedbackMap.put(userId, Collections.synchronizedList(new ArrayList<>()));
+            guessNamesMap.put(userId, Collections.synchronizedList(new ArrayList<>()));
         }
     }
 
     public boolean allReady() {
-        return readyMap.size() == 2 && readyMap.values().stream().allMatch(Boolean::booleanValue);
+        return playerIds.size() == 2 &&
+                readyMap.size() == 2 &&
+                readyMap.values().stream().allMatch(Boolean::booleanValue);
     }
+
 
     public void setReady(String userId, boolean ready) {
         readyMap.put(userId, ready);
-    }
-
-    public List<GuessFeedback> getFeedbacks(String userId) {
-        return feedbackMap.get(userId);
     }
 
     public List<String> getPastGuesses(String userId) {
@@ -62,8 +81,12 @@ public class GameRoom {
     }
 
     public void resetMaps() {
-        this.feedbackMap.clear();
-        this.guessNamesMap.clear();
-        this.readyMap.clear();
+        for (String userId: this.playerIds) {
+            this.feedbackMap.get(userId).clear();
+            this.guessNamesMap.get(userId).clear();
+            this.readyMap.replace(userId, false);
+        }
+        // clear players who dropped out of room
+        this.readyMap.keySet().removeIf(userId -> !this.playerIds.contains(userId));
     }
 }
