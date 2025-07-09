@@ -11,7 +11,7 @@ public class GameRoom {
 
     private final List<String> playerIds = Collections.synchronizedList(new ArrayList<>());
     private final Map<String, Boolean> readyMap = new ConcurrentHashMap<>(); // playerID -> ready
-    private final Map<String, List<GuessFeedback>> feedbackMap = new ConcurrentHashMap<>(); // playerID -> past feedbacks
+    private final Map<String, List<GuessComparison>> feedbackMap = new ConcurrentHashMap<>(); // playerID -> past feedbacks
     private final Map<String, List<String>> guessNamesMap = new ConcurrentHashMap<>(); // playerID -> past guesses
 
     private final Operator answer;
@@ -68,7 +68,7 @@ public class GameRoom {
         return guessNamesMap.get(userId);
     }
 
-    public void recordGuess(String userId, Operator guess, GuessFeedback feedback) {
+    public void recordGuess(String userId, Operator guess, GuessComparison feedback) {
         feedbackMap.get(userId).add(feedback);
         guessNamesMap.get(userId).add(guess.getName());
     }

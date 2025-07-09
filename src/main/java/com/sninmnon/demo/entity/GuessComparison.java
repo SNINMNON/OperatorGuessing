@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.*;
 
 @Data
-public class GuessFeedback {
+public class GuessComparison {
     private String name;
     private String role;
     private String race;
@@ -15,7 +15,7 @@ public class GuessFeedback {
     private String position;
     private String release;
 
-    public GuessFeedback(Operator g, Operator m) {
+    public GuessComparison(Operator g, Operator m) {
         this.name = Objects.equals(g.getName(), m.getName()) ? "equal": "different";
         this.role = Objects.equals(g.getRole(), m.getRole()) ? "equal": "different";
         this.race = Objects.equals(g.getRace(), m.getRace()) ? "equal": "different";

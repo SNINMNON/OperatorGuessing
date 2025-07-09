@@ -1,24 +1,27 @@
 package com.sninmnon.demo.entity;
 
 import lombok.Data;
+import lombok.Getter;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Data
 public class WebSocketMessage {
     private String type;      // join, ready, guess, etc.
-    private String roomId;
-    private String userId;
-    private String guess;
-    private Object payload; // gOperator{}, comparison{}
+    private final Map<String, Object> data = new HashMap<>();
 
     public WebSocketMessage() {}
 
-    public WebSocketMessage(String type, String roomId, String userId, Object payload) {
+    public WebSocketMessage(String type) {
         this.type = type;
-        this.roomId = roomId;
-        this.userId = userId;
-        this.payload = payload;
     }
 
+    public String getData(String key) {
+        return (String) this.data.get(key);
+    }
+
+    public void putData(String key, Object value) {
+        this.data.put(key, value);
+    }
 }

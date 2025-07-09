@@ -41,16 +41,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(@NonNull WebSocketSession session, TextMessage message) throws IOException {
         WebSocketMessage msg = objectMapper.readValue(message.getPayload(), WebSocketMessage.class);
-        String userId = msg.getUserId(); // always non-null
-        String roomId = msg.getRoomId(); // can be null when create/join
+        String userId = msg.getData("userId"); // always non-null
+        String roomId = msg.getData("roomId"); // can be null when create/join
 
-        log.info("Message received: type={}, user={}", msg.getType(), msg.getUserId());
+        log.info("Message received: type={}, user={}", msg.getType(), userId);
 
         switch (msg.getType()) {
             // create room and join
             case "create":
                 if (userRoomMap.get(userId) != null) {
-                    sendSimpleMsg(session, "user already in room " + userRoomMap.get(userId));
+                    sendErrorMsg(session, "user already in room " + userRoomMap.get(userId));
                     break;
                 }
                 String newRoomId = roomService.createRoom(userId);
@@ -58,92 +58,93 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 roomSessions.get(newRoomId).put(userId, session);
                 roomService.joinRoom(newRoomId, userId);
                 userRoomMap.put(userId, newRoomId);
-                broadcast(newRoomId, "create", userId, "user created and joined game room");
+                sendPayload(newRoomId, userId, "roomId", newRoomId);
                 break;
 
             // join existing room
             case "join":
                 if (userRoomMap.get(userId) != null) {
-                    sendSimpleMsg(session, "user already in room " + userRoomMap.get(userId));
+                    sendErrorMsg(session, "user already in room " + userRoomMap.get(userId));
                     break;
                 } else if (roomService.roomNotExist(roomId)) {
-                    sendSimpleMsg(session, "room not exist");
+                    sendErrorMsg(session, "room not exist");
                     break;
                 } else if (roomService.roomStarted(roomId)) {
-                    sendSimpleMsg(session, "room already started");
+                    sendErrorMsg(session, "room already started");
                     break;
                 }
 
                 roomSessions.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>()).put(userId, session);
                 roomService.joinRoom(roomId, userId);
                 userRoomMap.put(userId, roomId);
-                broadcast(roomId, "join", userId, "user joined game room");
+                broadcast(roomId, userId, "join", "user joined game room");
                 break;
 
             // mark ready for user in game room
             case "ready":
                 if (roomService.roomNotExist(roomId)) {
-                    sendSimpleMsg(session, "room not exist");
+                    sendErrorMsg(session, "room not exist");
                     break;
                 } else if (roomService.roomStarted(roomId)) {
-                    sendSimpleMsg(session, "room already started");
+                    sendErrorMsg(session, "room already started");
                     break;
                 }
 
                 roomService.markReady(roomId, userId);
-                broadcast(roomId, "ready", userId, "user ready");
+                broadcast(roomId, userId, "ready", "user ready");
 
                 GameRoom room = roomService.getGameRoom(roomId);
                 if (room.allReady()) {
                     room.setStarted(true);
-                    broadcast(roomId, "start", null, "game start");
+                    broadcast(roomId, null, "start", "game start");
                 }
                 break;
 
             case "unready":
                 if (roomService.roomNotExist(roomId)) {
-                    sendSimpleMsg(session, "room not exist");
+                    sendErrorMsg(session, "room not exist");
                     break;
                 } else if (roomService.roomStarted(roomId)) {
-                    sendSimpleMsg(session, "game already started");
+                    sendErrorMsg(session, "game already started");
                     break;
                 }
 
                 roomService.markUnready(roomId, userId);
-                broadcast(roomId, "unready", userId, "user unready");
+                broadcast(roomId, userId, "unready", "user unready");
                 break;
 
 
             // guess operator
             case "guess":
                 if (roomService.roomNotExist(roomId)) {
-                    sendSimpleMsg(session, "room not exist");
+                    sendErrorMsg(session, "room not exist");
                     break;
                 } else if (!roomService.roomStarted(roomId)) {
-                    sendSimpleMsg(session, "room not started");
+                    sendErrorMsg(session, "room not started");
                     break;
                 } else if (!roomSessions.get(roomId).containsKey(userId) || !userRoomMap.containsKey(userId)) {
-                    sendSimpleMsg(session, "user not in room");
+                    sendErrorMsg(session, "user not in room");
                     break;
                 }
 
-                String guessName = msg.getGuess();
-                Map<String, Object> payload = roomService.processGuess(roomId, userId, guessName);
+                String guessName = msg.getData("guess");
+                Map<String, Object> guessResponse = roomService.processGuess(roomId, userId, guessName);
                 // to self
-                sendPayload(roomId, userId, "guess", payload);
+                sendPayload(roomId, userId, "self guess", guessResponse);
                 // to opponent
                 String opponentId = roomService.getGameRoom(roomId).getOpponentId(userId);
-                payload.remove("guess");
-                sendPayload(roomId, opponentId, "guess", payload);
+                guessResponse.remove("guess");
+                sendPayload(roomId, opponentId, "opponent guess", guessResponse);
 
                 // when guess correct
-                if (Boolean.TRUE.equals(payload.get("correct"))) {
-                    broadcast(roomId, "over", null, "game over");
-                    // send to self opponent guesses
-                    sendPayload(roomId, userId, "opponent guesses",
+                if (Boolean.TRUE.equals(guessResponse.get("correct"))) {
+                    broadcast(roomId, null, "over", "game over");
+                    broadcast(roomId, null, "winner", userId);
+                    // send to self opponent history guesses
+                    sendPayload(roomId, userId, "history",
                             roomService.getPastGuesses(roomId, opponentId));
-                    // send to opponent self guesses
-                    sendPayload(roomId, opponentId, "opponent guesses",
+                    // send to opponent self history guesses
+                    sendPayload(roomId, opponentId, "history",
                             roomService.getPastGuesses(roomId, userId));
                     roomService.roomGameOver(roomId);
                 }
@@ -157,14 +158,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void broadcast(String roomId, String type, String sourceUserId, Object payload) throws IOException {
+    private void broadcast(String roomId, String sourceUserId, String msgName, String message) throws IOException {
         Map<String, WebSocketSession> sessions = roomSessions.get(roomId);
         for (Map.Entry<String, WebSocketSession> entry : sessions.entrySet()) {
             WebSocketSession s = entry.getValue();
 
             if (s.isOpen()) {
-                WebSocketMessage outMsg = new WebSocketMessage(type, roomId, sourceUserId, payload);
-                s.sendMessage(new TextMessage(objectMapper.writeValueAsString(outMsg)));
+                WebSocketMessage msg = new WebSocketMessage("broadcast");
+                msg.putData("userId", sourceUserId);
+                msg.putData(msgName, message);
+                s.sendMessage(new TextMessage(objectMapper.writeValueAsString(msg)));
             }
         }
     }
@@ -176,14 +179,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         assert session != null;
 
         if (session.isOpen()) {
-            WebSocketMessage msg = new WebSocketMessage(type, roomId, userId, payload);
+            WebSocketMessage msg = new WebSocketMessage(type);
+            msg.putData("payload", payload);
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(msg)));
         }
     }
 
-    private void sendSimpleMsg(WebSocketSession session, String message) throws IOException {
+    private void sendErrorMsg(WebSocketSession session, String message) throws IOException {
         if (session.isOpen()) {
-            WebSocketMessage msg = new WebSocketMessage("message", null, null, message);
+            WebSocketMessage msg = new WebSocketMessage("error");
+            msg.putData("message", message);
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(msg)));
         }
     }
@@ -219,7 +224,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             // 通知房间其他人
             try {
-                broadcast(affectedRoomId, "message", null, "user " + disconnectedUserId + " disconnected");
+                broadcast(affectedRoomId, null, "message",
+                        "user " + disconnectedUserId + " disconnected");
             } catch (Exception e) {
                 log.error("Failed to broadcast disconnection", e);
             }

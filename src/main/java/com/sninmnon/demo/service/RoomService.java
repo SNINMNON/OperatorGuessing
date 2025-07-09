@@ -69,18 +69,14 @@ public class RoomService {
             return null;
         }
 
-        GuessFeedback feedback = new GuessFeedback(guess, answer);
-        room.recordGuess(userId, guess, feedback);
+        GuessComparison comparison = new GuessComparison(guess, answer);
+        room.recordGuess(userId, guess, comparison);
 
-        Map<String, Object> payload = new ConcurrentHashMap<>();
-        payload.put("comparison", feedback);
-        payload.put("guess", guess);
-        if (feedback.getName().equals("equal")) {
-            payload.put("correct", true);
-        } else {
-            payload.put("correct", false);
-        }
-        return payload;
+        Map<String, Object> guessResponse = new ConcurrentHashMap<>();
+        guessResponse.put("comparison", comparison);
+        guessResponse.put("guess", guess);
+        guessResponse.put("correct", comparison.getName().equals("equal"));
+        return guessResponse;
     }
 
     public List<Operator> getPastGuesses(String roomId, String userId) {
