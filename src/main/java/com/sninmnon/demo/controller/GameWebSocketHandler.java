@@ -1,6 +1,7 @@
 package com.sninmnon.demo.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sninmnon.demo.service.OpService;
 import com.sninmnon.demo.service.RoomService;
 import com.sninmnon.demo.entity.*;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     @Autowired
     private RoomService roomService;
+    @Autowired
+    private OpService opService;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -154,9 +157,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 break;
 
             case "suggest":
+                roomId = userRoomMap.get(userId);
+                String query = msg.getData("query");
+                sendPayload(roomId, userId, "suggest", opService.suggestNames(query));
                 break;
 
             default:
+                sendErrorMsg(session, "message type unknown");
                 break;
         }
     }
