@@ -86,7 +86,10 @@ public class RoomService {
     public List<Operator> getPastGuesses(String roomId, String userId) {
         GameRoom room = roomMap.get(roomId);
         List<String> names = room.getPastGuesses(userId);
-        List<Operator> pastGuesses = new ArrayList<>();
+        List<Operator> pastGuesses = Collections.synchronizedList(new ArrayList<>());
+        /* no need for synchronization
+        * since these lists are dedicated for one user, and each user uses one websocket
+        */
         for (String name: names) {
             pastGuesses.add(opMapper.findByName(name));
         }

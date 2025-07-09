@@ -31,10 +31,11 @@ public class GameRoom {
                 '}';
     }
 
+    // this is not concurrent safe, should be used only for local debugging purpose
     public void printInfo() {
         StringBuilder msg = new StringBuilder();
         msg.append("roomId=").append(roomId);
-        for (String userId: this.playerIds) {
+        for (String userId: this.playerIds) { // should be wrapped inside synchronized
             msg.append("\tuserId=").append(userId);
             msg.append("\tfeedbacks=").append(this.feedbackMap.get(userId));
             msg.append("\tguessNames=").append(this.guessNamesMap.get(userId));
@@ -81,12 +82,14 @@ public class GameRoom {
     }
 
     public void resetMaps() {
-        for (String userId: this.playerIds) {
-            this.feedbackMap.get(userId).clear();
-            this.guessNamesMap.get(userId).clear();
-            this.readyMap.replace(userId, false);
+        synchronized (this.playerIds) {
+            for (String userId: this.playerIds) {
+                this.feedbackMap.get(userId).clear();
+                this.guessNamesMap.get(userId).clear();
+                this.readyMap.replace(userId, false);
+            }
+            // clear players who dropped out of room
+            this.readyMap.keySet().removeIf(userId -> !this.playerIds.contains(userId));
         }
-        // clear players who dropped out of room
-        this.readyMap.keySet().removeIf(userId -> !this.playerIds.contains(userId));
     }
 }
