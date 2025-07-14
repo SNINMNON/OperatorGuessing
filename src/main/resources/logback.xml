@@ -3,6 +3,13 @@
 
     <logger name="com.zaxxer.hikari" level="INFO"/>
     <logger name="org.springframework" level="INFO"/>
+    <!-- Keep SQL (PREPARING and PARAMETERS) -->
+    <logger name="org.apache.ibatis.logging.jdbc.BaseJdbcLogger" level="DEBUG"/>
+
+    <!-- Suppress session/transaction logs -->
+    <logger name="org.mybatis.spring.SqlSessionUtils" level="WARN" />
+    <logger name="org.mybatis.spring.transaction.SpringManagedTransaction" level="WARN" />
+
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
