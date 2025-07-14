@@ -4,7 +4,7 @@
     <logger name="com.zaxxer.hikari" level="INFO"/>
     <logger name="org.springframework" level="INFO"/>
     <!-- Keep SQL (PREPARING and PARAMETERS) -->
-    <logger name="org.apache.ibatis.logging.jdbc.BaseJdbcLogger" level="DEBUG"/>
+    <logger name="org.apache.ibatis.logging.jdbc.BaseJdbcLogger" level="INFO"/>
 
     <!-- Suppress session/transaction logs -->
     <logger name="org.mybatis.spring.SqlSessionUtils" level="WARN" />
@@ -27,6 +27,5 @@
 
     <root level="debug">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE" />
     </root>
 </configuration>
