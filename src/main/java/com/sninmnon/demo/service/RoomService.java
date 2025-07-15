@@ -18,13 +18,22 @@ public class RoomService {
 
     public String createRoom(String creatorId) {
         String roomId = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        Operator answer = opMapper.getRandomOp();
-        //Operator answer = opMapper.findByName("阿");
-        GameRoom room = new GameRoom(roomId, answer);
+        GameRoom room = new GameRoom(roomId);
         room.addPlayer(creatorId);
         roomMap.put(roomId, room);
         log.info("GameRoom created: {}", room);
         return roomId;
+    }
+
+    public Boolean startRoom(String roomId) {
+        GameRoom room = roomMap.get(roomId);
+        if (room.allReady()) {
+            Operator answer = opMapper.getRandomOp();
+            room.setAnswer(answer);
+            room.setStarted(true);
+            return true;
+        }
+        return false;
     }
 
     public void joinRoom(String roomId, String userId) {
@@ -35,6 +44,11 @@ public class RoomService {
                 log.info("GameRoom: {}, added player: {}", room, userId);
             }
         }
+    }
+
+    public Integer getUserNumber(String roomId) {
+        GameRoom room = roomMap.get(roomId);
+        return room.getPlayerIds().size();
     }
 
     public void markReady(String roomId, String userId) {

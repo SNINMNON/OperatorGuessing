@@ -5,6 +5,12 @@
     <logger name="org.springframework" level="INFO"/>
     <!-- Keep SQL (PREPARING and PARAMETERS) -->
     <logger name="org.apache.ibatis.logging.jdbc.BaseJdbcLogger" level="INFO"/>
+    <!-- To turn off all debug logs for your mapper -->
+    <logger name="c.s.d.m.OpMapper" level="WARN"/>
+    <logger name="c.s.demo.mapper.OpMapper" level="WARN"/>
+
+    <!-- Or to disable all SQL-related MyBatis logs -->
+    <logger name="org.mybatis" level="WARN"/>
 
     <!-- Suppress session/transaction logs -->
     <logger name="org.mybatis.spring.SqlSessionUtils" level="WARN" />

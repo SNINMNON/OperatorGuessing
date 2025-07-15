@@ -14,12 +14,12 @@ public class GameRoom {
     private final Map<String, List<GuessComparison>> feedbackMap = new ConcurrentHashMap<>(); // playerID -> past feedbacks
     private final Map<String, List<String>> guessNamesMap = new ConcurrentHashMap<>(); // playerID -> past guesses
 
-    private final Operator answer;
+    private Operator answer;
     private boolean started = false;
 
-    public GameRoom(String roomId, Operator answer) {
+    public GameRoom(String roomId) {
         this.roomId = roomId;
-        this.answer = answer;
+        this.answer = null;
     }
 
     @Override

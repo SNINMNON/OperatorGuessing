@@ -81,7 +81,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 roomSessions.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>()).put(userId, session);
                 roomService.joinRoom(roomId, userId);
                 userRoomMap.put(userId, roomId);
-                broadcast(roomId, userId, "join", "user joined game room");
+                broadcast(roomId, userId, "join");
                 break;
 
             // mark ready for user in game room
@@ -93,15 +93,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 } else if (roomService.roomStarted(roomId)) {
                     sendErrorMsg(session, "room already started");
                     break;
+                } else if (roomService.getUserNumber(roomId) == 1) {
+                    sendErrorMsg(session, "opponent not yet joined");
+                    break;
                 }
 
                 roomService.markReady(roomId, userId);
-                broadcast(roomId, userId, "ready", "user ready");
+                broadcast(roomId, userId, "ready");
 
-                GameRoom room = roomService.getGameRoom(roomId);
-                if (room.allReady()) {
-                    room.setStarted(true);
-                    broadcast(roomId, null, "start", "game start");
+                if (roomService.startRoom(roomId)) {
+                    broadcast(roomId, null, "start");
                 }
                 break;
 
@@ -116,7 +117,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 }
 
                 roomService.markUnready(roomId, userId);
-                broadcast(roomId, userId, "unready", "user unready");
+                broadcast(roomId, userId, "unready");
                 break;
 
 
@@ -145,7 +146,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
                 // when guess correct
                 if (Boolean.TRUE.equals(guessResponse.get("correct"))) {
-                    broadcast(roomId, userId, "win", "game over");
+                    broadcast(roomId, userId, "win");
                     // send to self opponent history guesses
                     sendPayload(roomId, userId, "opponent history",
                             roomService.getPastGuesses(roomId, opponentId));
@@ -168,7 +169,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void broadcast(String roomId, String sourceUserId, String msgName, String message) throws IOException {
+    private void broadcast(String roomId, String sourceUserId, String message) throws IOException {
         Map<String, WebSocketSession> sessions = roomSessions.get(roomId);
         for (Map.Entry<String, WebSocketSession> entry : sessions.entrySet()) {
             WebSocketSession s = entry.getValue();
@@ -176,7 +177,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             if (s.isOpen()) {
                 WebSocketMessage msg = new WebSocketMessage("broadcast");
                 msg.setUserId(sourceUserId);
-                msg.putData(msgName, message);
+                msg.putData("roomId", roomId);
+                msg.putData("message", message);
                 s.sendMessage(new TextMessage(objectMapper.writeValueAsString(msg)));
             }
         }
@@ -235,8 +237,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             // 通知房间其他人
             try {
-                broadcast(affectedRoomId, null, "message",
-                        "user " + disconnectedUserId + " disconnected");
+                broadcast(affectedRoomId, disconnectedUserId, "disconnect");
             } catch (Exception e) {
                 log.error("Failed to broadcast disconnection", e);
             }
