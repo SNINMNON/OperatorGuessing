@@ -1,35 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <logger name="com.zaxxer.hikari" level="INFO"/>
-    <logger name="org.springframework" level="INFO"/>
-    <!-- Keep SQL (PREPARING and PARAMETERS) -->
-    <logger name="org.apache.ibatis.logging.jdbc.BaseJdbcLogger" level="INFO"/>
-    <!-- To turn off all debug logs for your mapper -->
-    <logger name="c.s.d.m.OpMapper" level="WARN"/>
-    <logger name="c.s.demo.mapper.OpMapper" level="WARN"/>
+<!--    <logger name="com.zaxxer.hikari" level="INFO"/>-->
+<!--    <logger name="org.springframework" level="INFO"/>-->
+<!--    &lt;!&ndash; Keep SQL (PREPARING and PARAMETERS) &ndash;&gt;-->
+<!--    <logger name="org.apache.ibatis.logging.jdbc.BaseJdbcLogger" level="INFO"/>-->
+<!--    &lt;!&ndash; To turn off all debug logs for your mapper &ndash;&gt;-->
+<!--    <logger name="c.s.d.m.OpMapper" level="WARN"/>-->
+<!--    <logger name="c.s.demo.mapper.OpMapper" level="WARN"/>-->
 
-    <!-- Or to disable all SQL-related MyBatis logs -->
-    <logger name="org.mybatis" level="WARN"/>
+<!--    &lt;!&ndash; Or to disable all SQL-related MyBatis logs &ndash;&gt;-->
+<!--    <logger name="org.mybatis" level="WARN"/>-->
 
-    <!-- Suppress session/transaction logs -->
-    <logger name="org.mybatis.spring.SqlSessionUtils" level="WARN" />
-    <logger name="org.mybatis.spring.transaction.SpringManagedTransaction" level="WARN" />
+<!--    &lt;!&ndash; Suppress session/transaction logs &ndash;&gt;-->
+<!--    <logger name="org.mybatis.spring.SqlSessionUtils" level="WARN" />-->
+<!--    <logger name="org.mybatis.spring.transaction.SpringManagedTransaction" level="WARN" />-->
 
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>[%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
+<!--    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">-->
+<!--        <encoder>-->
+<!--            <pattern>[%thread] %-5level %logger{36} - %msg%n</pattern>-->
+<!--        </encoder>-->
+<!--    </appender>-->
 
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>logs/app.log</file>
-        <append>true</append>
-        <encoder>
-            <pattern>%-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
 
+<!--    <root level="DEBUG">-->
+<!--        <appender-ref ref="STDOUT" />-->
+<!--    </root>-->
     <root level="OFF" />
 </configuration>
