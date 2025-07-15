@@ -28,7 +28,8 @@ public class RoomService {
     public Boolean startRoom(String roomId) {
         GameRoom room = roomMap.get(roomId);
         if (room.allReady()) {
-            Operator answer = opMapper.getRandomOp();
+            //Operator answer = opMapper.getRandomOp();
+            Operator answer = opMapper.findByName("阿");
             room.setAnswer(answer);
             room.setStarted(true);
             return true;
