@@ -66,7 +66,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             // join existing room
             case "join":
-                roomId = msg.getData("roomId");
+                roomId = msg.getData("roomId").trim().toUpperCase();
                 if (userRoomMap.get(userId) != null) {
                     sendErrorMsg(session, "user already in room " + userRoomMap.get(userId));
                     break;
