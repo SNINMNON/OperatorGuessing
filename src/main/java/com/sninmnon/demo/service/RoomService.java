@@ -16,9 +16,9 @@ public class RoomService {
     private final OpMapper opMapper;
     public RoomService(OpMapper opMapper) {this.opMapper = opMapper;}
 
-    public String createRoom(String creatorId) {
+    public String createRoom(String creatorId, boolean publicGame) {
         String roomId = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        GameRoom room = new GameRoom(roomId);
+        GameRoom room = new GameRoom(roomId, publicGame);
         room.addPlayer(creatorId);
         roomMap.put(roomId, room);
         log.info("GameRoom created: {}", room);
@@ -107,7 +107,7 @@ public class RoomService {
         return pastGuesses;
     }
 
-    public void checkRoomVacant(String roomId) {
+    public void deleteRoom(String roomId) {
         GameRoom room = roomMap.get(roomId);
         if (room.getPlayerNumber() == 0) {
             roomMap.remove(roomId);
@@ -120,11 +120,15 @@ public class RoomService {
     }
 
     public boolean roomStarted(String roomId) {
-        if (roomId == null) {
-            return false;
-        }
+        if (roomId == null) return false;
         GameRoom room = roomMap.get(roomId);
         return room.isStarted();
+    }
+
+    public boolean isPublicGame(String roomId) {
+        if (roomId == null) return false;
+        GameRoom room = roomMap.get(roomId);
+        return room.isPublicGame();
     }
 
     public void roomGameOver(String roomId) {

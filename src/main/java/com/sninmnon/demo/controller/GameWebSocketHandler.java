@@ -56,7 +56,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     sendErrorMsg(session, "user already in room " + userRoomMap.get(userId));
                     break;
                 }
-                String newRoomId = roomService.createRoom(userId);
+                String newRoomId = roomService.createRoom(userId, msg.getDataBool("public"));
+
                 roomSessions.put(newRoomId, new ConcurrentHashMap<>());
                 roomSessions.get(newRoomId).put(userId, session);
                 roomService.joinRoom(newRoomId, userId);
@@ -64,9 +65,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 sendPayload(newRoomId, userId, "roomId", newRoomId);
                 break;
 
-            // join existing room
+            // join existing room with roomId
             case "join":
-                roomId = msg.getData("roomId").trim().toUpperCase();
+                roomId = msg.getDataStr("roomId").trim().toUpperCase();
                 if (userRoomMap.get(userId) != null) {
                     sendErrorMsg(session, "user already in room " + userRoomMap.get(userId));
                     break;
@@ -82,6 +83,26 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 roomService.joinRoom(roomId, userId);
                 userRoomMap.put(userId, roomId);
                 broadcast(roomId, userId, "join");
+                break;
+
+            // find public room
+            case "find":
+                String publicRoomId = null;
+                for (Map.Entry<String, Map<String, WebSocketSession>> roomEntry : roomSessions.entrySet()) {
+                    String existRoomId = roomEntry.getKey();
+                    if (roomService.isPublicGame(existRoomId) && roomService.getUserNumber(existRoomId) == 1) {
+                        publicRoomId = existRoomId;
+                        break;
+                    }
+                }
+                if (publicRoomId != null) { // join public game room if there is one vacant
+                    roomSessions.computeIfAbsent(publicRoomId, k -> new ConcurrentHashMap<>()).put(userId, session);
+                    roomService.joinRoom(publicRoomId, userId);
+                    userRoomMap.put(userId, publicRoomId);
+                    broadcast(publicRoomId, userId, "join");
+                    break;
+                }
+                sendErrorMsg(session, "no available public room");
                 break;
 
             // mark ready for user in game room
@@ -135,7 +156,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     break;
                 }
 
-                String guessName = msg.getData("guess");
+                String guessName = msg.getDataStr("guess");
                 Map<String, Object> guessResponse = roomService.processGuess(roomId, userId, guessName);
                 // to self
                 sendPayload(roomId, userId, "self guess", guessResponse);
@@ -159,7 +180,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             case "suggest":
                 roomId = userRoomMap.get(userId);
-                String query = msg.getData("query");
+                String query = msg.getDataStr("query");
                 sendPayload(roomId, userId, "suggest", opService.suggestNames(query));
                 break;
 
@@ -171,15 +192,15 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     private void broadcast(String roomId, String sourceUserId, String message) throws IOException {
         Map<String, WebSocketSession> sessions = roomSessions.get(roomId);
+        WebSocketMessage msg = new WebSocketMessage("broadcast");
+        msg.setUserId(sourceUserId);
+        msg.putData("roomId", roomId);
+        msg.putData("message", message);
+        TextMessage textMsg = new TextMessage(objectMapper.writeValueAsString(msg));
         for (Map.Entry<String, WebSocketSession> entry : sessions.entrySet()) {
             WebSocketSession s = entry.getValue();
-
             if (s.isOpen()) {
-                WebSocketMessage msg = new WebSocketMessage("broadcast");
-                msg.setUserId(sourceUserId);
-                msg.putData("roomId", roomId);
-                msg.putData("message", message);
-                s.sendMessage(new TextMessage(objectMapper.writeValueAsString(msg)));
+                s.sendMessage(textMsg);
             }
         }
     }
@@ -252,7 +273,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 roomSessions.remove(affectedRoomId);
             }
 
-            roomService.checkRoomVacant(affectedRoomId);  // 这个方法内部会移除空房
+            roomService.deleteRoom(affectedRoomId);  // 这个方法内部会移除空房
         } else {
             log.warn("Disconnected session {} not found in roomSessions", session.getId());
         }

@@ -16,18 +16,21 @@ public class GameRoom {
 
     private Operator answer;
     private boolean started = false;
+    private boolean publicGame;
 
-    public GameRoom(String roomId) {
+    public GameRoom(String roomId, boolean publicGame) {
         this.roomId = roomId;
         this.answer = null;
+        this.publicGame = publicGame;
     }
 
     @Override
     public String toString() {
         return "GameRoom{" +
-                "roomId='" + roomId + '\'' +
+                "roomId=" + roomId +
+                ", playerNO=" + playerIds.size() +
                 ", playerIds=" + playerIds +
-                ", started=" + started +
+                ", publicGame=" + publicGame +
                 '}';
     }
 

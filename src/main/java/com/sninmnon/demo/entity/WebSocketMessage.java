@@ -1,7 +1,6 @@
 package com.sninmnon.demo.entity;
 
 import lombok.Data;
-import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,8 +17,19 @@ public class WebSocketMessage {
         this.type = type;
     }
 
-    public String getData(String key) {
+    public String getDataStr(String key) {
         return (String) this.data.get(key);
+    }
+
+    public Boolean getDataBool(String key) {
+        Object val = data.get(key);
+        if (val instanceof Boolean) {
+            return (Boolean) val;
+        }
+        if (val instanceof String) {
+            return Boolean.parseBoolean((String) val);
+        }
+        return null;
     }
 
     public void putData(String key, Object value) {
