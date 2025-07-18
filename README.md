@@ -7,12 +7,10 @@
 
 实现方式：
 - 后端：Springboot + MyBatis
-- 数据库：supabase，使用postgres
-- 前端：vue.js [前端仓库](https://github.com/SNINMNON/OperatingGuessing-frontend)
+- 数据库：supabase, 使用postgres
+- 前端：vue.js, Naive UI [前端仓库](https://github.com/SNINMNON/OperatingGuessing-frontend)
 
 待实现：
 - 干员头像显示
-- 手机端UI改进
 - 双人模式：
-  - 浮窗提示消息
   - 开始倒计时与比赛计时功能
