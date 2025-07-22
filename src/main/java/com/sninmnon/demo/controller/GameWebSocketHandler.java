@@ -167,7 +167,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
                 // when guess correct
                 if (Boolean.TRUE.equals(guessResponse.get("correct"))) {
-                    broadcast(roomId, userId, "win");
+                    broadcastWin(roomId, userId, roomService.getGameRoom(roomId).getAnswer());
                     // send to self opponent history guesses
                     sendPayload(roomId, userId, "opponent history",
                             roomService.getPastGuesses(roomId, opponentId));
@@ -196,6 +196,21 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         msg.setUserId(sourceUserId);
         msg.putData("roomId", roomId);
         msg.putData("message", message);
+        TextMessage textMsg = new TextMessage(objectMapper.writeValueAsString(msg));
+        for (Map.Entry<String, WebSocketSession> entry : sessions.entrySet()) {
+            WebSocketSession s = entry.getValue();
+            if (s.isOpen()) {
+                s.sendMessage(textMsg);
+            }
+        }
+    }
+
+    private void broadcastWin(String roomId, String sourceUserId, Object answer) throws IOException {
+        Map<String, WebSocketSession> sessions = roomSessions.get(roomId);
+        WebSocketMessage msg = new WebSocketMessage("broadcast");
+        msg.setUserId(sourceUserId);
+        msg.putData("message", "win");
+        msg.putData("answer", answer);
         TextMessage textMsg = new TextMessage(objectMapper.writeValueAsString(msg));
         for (Map.Entry<String, WebSocketSession> entry : sessions.entrySet()) {
             WebSocketSession s = entry.getValue();

@@ -14,4 +14,5 @@ public class Operator {
     private String faction;
     private String position;
     private Date release;
+    private String image;
 }
